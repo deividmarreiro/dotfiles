@@ -28,7 +28,8 @@ colors:
     cyan: "#56b6c2"
     white: "#ECEFF4"
 
-background_opacity: 1.0
+# I use 0.8 in a Linux Distro and 1.0 on WSL.
+background_opacity: 0.8 #1.0
 
 font:
   normal:
