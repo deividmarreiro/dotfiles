@@ -1,0 +1,261 @@
+#!/bin/bash
+
+# This is the setup script for my dotfiles. The idea is to be able to run this
+# after cloning the repo on a Ubuntu(WSL) system and be setup and running
+# very quickly.
+
+
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" >/dev/null 2>&1
+}
+
+# Function to check if a folder exists
+folder_exists() {
+  [ -d "$1" ] && return 0 || return 1  
+}
+
+# Function to print formatted text to the terminal in blue as information
+fmt_info() {
+  printf '%s\n' "${FMT_BOLD}${FMT_BLUE}" "$*" "$FMT_RESET"
+}
+
+# Function to print formatted text to the terminal in green as success
+fmt_success() {
+  printf '%s\n' "${FMT_BOLD}${FMT_GREEN}" "$*" "$FMT_RESET"
+}
+
+# Function to print formatted text to the terminal in red as error
+fmt_error() {
+  printf '%sError: %s%s\n' "${FMT_BOLD}${FMT_RED}" "$*" "$FMT_RESET" >&2
+}
+
+# Function to setup colors for the terminal
+setup_color() {
+  # Using Catppuccin colors
+  FMT_RED=$(printf '\033[38;2;243;139;168m')
+  FMT_GREEN=$(printf '\033[38;2;166;227;161m')
+  FMT_YELLOW=$(printf '\033[38;2;249;226;175m')
+  FMT_BLUE=$(printf '\033[38;2;137;180;250m')
+  FMT_BOLD=$(printf '\033[1m')
+  FMT_RESET=$(printf '\033[0m')
+}
+
+test_failure() {
+  return 1
+}
+
+# Function to update the system
+update_system() {
+  fmt_info "
+  ***************************************
+  * Check for updates and install them  *
+  ***************************************
+  "
+  sudo apt-get update -y && sudo apt-get upgrade -y
+  if [ $? -eq 0 ]; then
+    fmt_success "System updated successfully"
+  else
+    fmt_error "Failed to update system"
+    exit 1
+  fi
+}
+
+install_build_essential() {
+  fmt_info "
+  ***************************************
+  * Installing build-essential package  *
+  ***************************************
+  "
+  sudo apt-get install build-essential -y
+  if [ $? -eq 0 ]; then
+    fmt_success "build-essential package installed successfully"
+  else
+    fmt_error "Failed to install build-essential package"
+    exit 1
+  fi
+}
+
+# Function to clean up the system
+clean_up() {
+  fmt_info "
+  **************************
+  * Cleaning up the system *
+  **************************
+  "
+  sudo apt-get autoclean -y && sudo apt-get clean -y && sudo apt-get autoremove -y
+
+  if [ $? -eq 0 ]; then
+    fmt_success "System cleaned up successfully"
+  else
+    fmt_error "Failed to clean up system"
+    exit 1
+  fi
+
+}
+
+# Function to install zsh
+install_zsh() {
+  fmt_info "
+  ******************
+  * Installing ZSH *
+  ******************
+  "
+  brew install zsh
+  if [ $? -eq 0 ]; then
+    fmt_success "ZSH installed successfully"
+  else
+    fmt_error "Failed to install ZSH"
+    exit 1
+  fi
+}
+
+# Function to install Homebrew
+install_brew() {
+  fmt_info "
+  ***********************
+  * Installing Homebrew *
+  ***********************
+  "
+  if folder_exists "/home/linuxbrew/.linuxbrew"; then
+    if command_exists brew; then
+      fmt_success "Homebrew already installed"
+      return
+    else
+      eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+      return
+    fi
+  fi
+
+  yes | /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  if [ $? -eq 0 ]; then
+    fmt_success "Homebrew installed successfully"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  else
+    fmt_error "Failed to install Homebrew"
+    exit 1
+  fi
+}
+
+# Function to run post installation steps for Homebrew
+post_install_brew() {
+  fmt_info "
+  ***************************
+  * Post installation steps *
+  ***************************
+  "
+  brew install gcc
+
+  if [ $? -eq 0 ]; then
+    fmt_success "Post installation steps completed successfully"
+  else
+    fmt_error "Failed to complete post installation steps"
+    exit 1
+  fi
+}
+
+# Function to install Stow
+install_stow() {
+  if command_exists stow; then
+    fmt_success "Stow already installed"
+    return
+  fi
+  fmt_info "
+  *******************
+  * Installing Stow *
+  *******************
+  "
+  brew install stow
+  if [ $? -eq 0 ]; then
+    fmt_success "Stow installed successfully"
+  else
+    fmt_error "Failed to install Stow"
+    exit 1
+  fi
+}
+
+# Function to install Oh My Zsh
+install_oh_my_zsh() {
+  if folder_exists "$HOME/.oh-my-zsh"; then
+    fmt_success "Oh My Zsh already installed"
+    return
+  fi
+
+  fmt_info "
+  **************************
+  * Installing Oh My Zsh   *
+  **************************
+  "
+  yes | sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  if [ $? -eq 0 ]; then
+    fmt_success "Oh My Zsh installed successfully"
+  else
+    fmt_error "Failed to install Oh My Zsh"
+    exit 1
+  fi
+}
+
+
+# Function to setup the shell
+setup_shell() {
+  # If this user's login shell is already "zsh", do not attempt to switch.
+  if [ "$(basename -- "$SHELL")" = "zsh" ]; then
+    exec zsh -l
+    return
+  fi
+
+  zsh="$(which zsh)"
+  sudo chsh -s "$zsh" "$USER"
+  
+  # Check if the shell change was successful
+  if [ $? -ne 0 ]; then
+    fmt_error "chsh command unsuccessful."
+    exit 1
+  else
+    export SHELL="$zsh"
+    exec zsh -l
+    echo "${FMT_GREEN}Shell successfully changed to '$zsh'.${FMT_RESET}"
+  fi
+}
+
+main() {
+  # Line just to ask the password to isntall run the script
+  sudo -v
+
+  # Line to setup colors to the terminal while running the script
+  setup_color
+
+  # Update the system and install build-essential package
+  update_system
+  install_build_essential
+
+  # Check if git and curl are installed
+  if ! command_exists git; then
+    fmt_error "Git is not installed. Please install it first"
+    exit 1
+  elif ! command_exists curl; then
+    fmt_error "Curl is not installed. Please install it first"
+    exit 1
+  fi
+
+  # Check if Homebrew is installed and install it if not
+  # Also run post installation steps
+  install_brew 
+  post_install_brew
+
+  # Check if zsh is installed and install it if not
+  command_exists zsh || install_zsh
+
+
+  # Check if Stow is installed and install it if not
+  install_stow
+  # Set symlink for .zshrc
+  stow zsh
+
+  # Check if Oh My Zsh is installed and install it if not
+  install_oh_my_zsh
+  setup_shell
+  clean_up
+}
+
+main
