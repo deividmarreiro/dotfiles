@@ -61,13 +61,14 @@ update_system() {
   fi
 }
 
-install_build_essential() {
+install_essential_packages() {
   fmt_info "
   ***************************************
   * Installing build-essential package  *
   ***************************************
   "
   sudo apt-get install build-essential -y
+  sudo apt-get install python3-pip -y
   if [ $? -eq 0 ]; then
     fmt_success "build-essential package installed successfully"
   else
@@ -94,18 +95,19 @@ clean_up() {
 
 }
 
-# Function to install zsh
-install_zsh() {
+# Function to run post installation steps for Homebrew
+post_install_brew() {
   fmt_info "
-  ******************
-  * Installing ZSH *
-  ******************
+  ***************************
+  * Post installation steps *
+  ***************************
   "
-  brew install zsh
+  brew install gcc
+
   if [ $? -eq 0 ]; then
-    fmt_success "ZSH installed successfully"
+    fmt_success "Post installation steps completed successfully"
   else
-    fmt_error "Failed to install ZSH"
+    fmt_error "Failed to complete post installation steps"
     exit 1
   fi
 }
@@ -123,6 +125,7 @@ install_brew() {
       return
     else
       eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+      post_install_brew
       return
     fi
   fi
@@ -131,25 +134,25 @@ install_brew() {
   if [ $? -eq 0 ]; then
     fmt_success "Homebrew installed successfully"
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    post_install_brew
   else
     fmt_error "Failed to install Homebrew"
     exit 1
   fi
 }
 
-# Function to run post installation steps for Homebrew
-post_install_brew() {
+# Function to install zsh
+install_zsh() {
   fmt_info "
-  ***************************
-  * Post installation steps *
-  ***************************
+  ******************
+  * Installing ZSH *
+  ******************
   "
-  brew install gcc
-
+  brew install zsh
   if [ $? -eq 0 ]; then
-    fmt_success "Post installation steps completed successfully"
+    fmt_success "ZSH installed successfully"
   else
-    fmt_error "Failed to complete post installation steps"
+    fmt_error "Failed to install ZSH"
     exit 1
   fi
 }
@@ -186,7 +189,7 @@ install_oh_my_zsh() {
   * Installing Oh My Zsh   *
   **************************
   "
-  yes | sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  yes | sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --keep-zshrc yes
   if [ $? -eq 0 ]; then
     fmt_success "Oh My Zsh installed successfully"
   else
@@ -195,11 +198,11 @@ install_oh_my_zsh() {
   fi
 }
 
-
 # Function to setup the shell
 setup_shell() {
   # If this user's login shell is already "zsh", do not attempt to switch.
   if [ "$(basename -- "$SHELL")" = "zsh" ]; then
+    fmt_info "Shell is already zsh. Skipping shell change."
     exec zsh -l
     return
   fi
@@ -218,6 +221,272 @@ setup_shell() {
   fi
 }
 
+# Function to clone ZSH plugins
+clone_zsh_plugins() {
+  # Install zsh-autosuggestions
+  if folder_exists "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"; then
+    fmt_success "ZSH Autosuggestions already installed"
+  else
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+  fi
+
+  # Install zsh-syntax-highlighting
+  if folder_exists "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"; then
+    fmt_success "ZSH Syntax Highlighting already installed"
+  else
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+  fi
+  
+  # Install zsh-completions
+  if folder_exists "$HOME/.oh-my-zsh/custom/plugins/zsh-completions"; then
+    fmt_success "ZSH Completions already installed"
+  else
+    git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions
+  fi
+
+  # Install you-should-use
+  if folder_exists "$HOME/.oh-my-zsh/custom/plugins/you-should-use"; then
+    fmt_success "You Should Use already installed"
+  else
+    git clone https://github.com/MichaelAquilina/zsh-you-should-use.git $ZSH_CUSTOM/plugins/you-should-use
+  fi
+}
+
+# Function to install Starship
+install_starship() {
+  if folder_exists /home/linuxbrew/.linuxbrew/bin/starship || command_exists starship; then
+    fmt_success "Starship already installed"
+    return
+  fi
+  fmt_info "
+  ***********************
+  * Installing Starship *
+  ***********************
+  "
+  brew install starship
+  if [ $? -eq 0 ]; then
+    fmt_success "Starship installed successfully"
+  else
+    fmt_error "Failed to install Starship"
+    exit 1
+  fi
+}
+
+install_pyenv_build_dependencies() {
+  fmt_info "
+  ***************************************
+  * Installing Pyenv build dependencies *
+  ***************************************
+  "
+  sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
+  libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+  xz-utils tk-dev libffi-dev liblzma-dev python3-openssl
+}
+
+# Function to install Pyenv
+install_pyenv() {
+  if command_exists pyenv; then
+    fmt_success "Pyenv already installed"
+    return
+  fi
+  fmt_info "
+  ********************
+  * Installing Pyenv *
+  ********************
+  "
+  brew install pyenv
+  if [ $? -eq 0 ]; then
+    fmt_success "Pyenv installed successfully"
+    # Just to make sure that the shell is setup correctly
+    # And run the install_python_3_12 function below
+    export PATH="$HOME/.pyenv/bin:$PATH"
+    eval "$(pyenv init -)"
+  else
+    fmt_error "Failed to install Pyenv"
+    exit 1
+  fi
+}
+
+install_python_3_12() {
+  if pyenv versions | grep -q "3.12.0"; then
+    fmt_success "Python 3.12.0 already installed"
+    return
+  fi
+  fmt_info "
+  **************************
+  * Installing Python 3.12.0 *
+  **************************
+  "
+  pyenv install 3.12.0
+  if [ $? -eq 0 ]; then
+    fmt_success "Python 3.12.0 installed successfully"
+    pyenv global 3.12.0
+  else
+    fmt_error "Failed to install Python 3.12.0"
+    exit 1
+  fi
+}
+
+# Function to install Poetry
+install_poetry() {
+  if command_exists poetry; then
+    fmt_success "Poetry already installed"
+    return
+  fi
+  fmt_info "
+  *********************
+  * Installing Poetry *
+  *********************
+  "
+  curl -sSL https://install.python-poetry.org | python3 -
+  if [ $? -eq 0 ]; then
+    fmt_success "Poetry installed successfully"
+    mkdir $ZSH_CUSTOM/plugins/poetry
+    poetry completions zsh > $ZSH_CUSTOM/plugins/poetry/_poetry
+  else
+    fmt_error "Failed to install Poetry"
+    exit 1
+  fi
+}
+
+# Function to install Eza CLI
+install_eza() {
+  if command_exists eza; then
+    fmt_success "Eza already installed"
+    return
+  fi
+  fmt_info "
+  ***********************
+  * Installing Eza CLI *
+  ***********************
+  "
+  brew install eza
+  if [ $? -eq 0 ]; then
+    fmt_success "Eza CLI installed successfully"
+  else
+    fmt_error "Failed to install Eza CLI"
+    exit 1
+  fi
+
+}
+
+# Function to install Lazydocker
+install_lazydocker() {
+  if command_exists lazydocker; then
+    fmt_success "Lazydocker already installed"
+    return
+  fi
+  fmt_info "
+  ***************************
+  * Installing Lazydocker   *
+  ***************************
+  "
+  brew install jesseduffield/lazydocker/lazydocker
+  if [ $? -eq 0 ]; then
+    fmt_success "Lazydocker installed successfully"
+  else
+    fmt_error "Failed to install Lazydocker"
+    exit 1
+  fi
+}
+
+# Function to install Lazygit
+install_lazygit() {
+  if command_exists lazygit; then
+    fmt_success "Lazygit already installed"
+    return
+  fi
+  fmt_info "
+  **********************
+  * Installing Lazygit *
+    **********************
+  "
+  brew install jesseduffield/lazygit/lazygit
+  if [ $? -eq 0 ]; then
+    fmt_success "Lazygit installed successfully"
+  else
+    fmt_error "Failed to install Lazygit"
+    exit 1
+  fi
+}
+
+# Function to install Tmux
+install_tmux() {
+  if command_exists tmux; then
+    fmt_success "Tmux already installed"
+    return
+  fi
+  fmt_info "
+  *******************
+  * Installing Tmux *
+  *******************
+  "
+  brew install tmux
+  if [ $? -eq 0 ]; then
+    fmt_success "Tmux installed successfully"
+  else
+    fmt_error "Failed to install Tmux"
+    exit 1
+  fi
+}
+
+# Function to clone Tmux Plugin Manager
+clone_tmux_plugin_manager() {
+  if folder_exists "$HOME/.tmux/plugins/tpm"; then
+    fmt_success "Tmux Plugin Manager already installed"
+    return
+  fi
+  fmt_info "
+  *******************************
+  * Cloning Tmux Plugin Manager *
+  *******************************
+  "
+  git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+}
+
+# Function to install neovim
+install_neovim() {
+  if command_exists nvim; then
+    fmt_success "Neovim already installed"
+    return
+  fi
+  fmt_info "
+  ***********************
+  * Installing Neovim   *
+  ***********************
+  "
+  brew install neovim
+  if [ $? -eq 0 ]; then
+    fmt_success "Neovim installed successfully"
+  else
+    fmt_error "Failed to install Neovim"
+    exit 1
+  fi
+}
+
+install_zsh_plugins_and_packages() {
+  fmt_info "
+  ***************************
+  * Installing ZSH plugins  *
+  ***************************
+  "
+  clone_zsh_plugins
+  install_starship
+  install_pyenv_build_dependencies
+  install_pyenv
+  install_python_3_12
+  install_poetry
+  install_eza
+  install_lazydocker
+  install_lazygit
+  install_tmux
+  clone_tmux_plugin_manager
+  install_neovim
+
+  fmt_success "ZSH plugins installed successfully"
+}
+
+# Main function to run the script
 main() {
   # Line just to ask the password to isntall run the script
   sudo -v
@@ -227,7 +496,7 @@ main() {
 
   # Update the system and install build-essential package
   update_system
-  install_build_essential
+  install_essential_packages
 
   # Check if git and curl are installed
   if ! command_exists git; then
@@ -241,21 +510,29 @@ main() {
   # Check if Homebrew is installed and install it if not
   # Also run post installation steps
   install_brew 
-  post_install_brew
 
   # Check if zsh is installed and install it if not
   command_exists zsh || install_zsh
 
+  # Check if Oh My Zsh is installed and install it if not
+  install_oh_my_zsh
 
   # Check if Stow is installed and install it if not
   install_stow
-  # Set symlink for .zshrc
-  stow zsh
 
-  # Check if Oh My Zsh is installed and install it if not
-  install_oh_my_zsh
-  setup_shell
+  # Install ZSH plugins and packages
+  install_zsh_plugins_and_packages
+
+  # remove .zshrc to syumlink it with stow
+  rm $HOME/.zshrc
+  # Set symlink for .zshrc
+  stow */
+
+  # Clean up the system
   clean_up
+
+  # Setup the shell
+  setup_shell
 }
 
 main
