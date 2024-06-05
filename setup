@@ -477,6 +477,7 @@ install_fzf() {
   brew install fzf
   if [ $? -eq 0 ]; then
     fmt_success "Fzf installed successfully"
+    source <(fzf --zsh)
   else
     fmt_error "Failed to install Fzf"
     exit 1
