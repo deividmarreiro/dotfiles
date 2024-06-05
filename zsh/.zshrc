@@ -18,7 +18,6 @@ plugins=(git fzf zsh-autosuggestions zsh-syntax-highlighting you-should-use poet
 
 source $ZSH/oh-my-zsh.sh
 
-export FZF_BASE=/path/to/fzf/install/dir
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 # Changing ls to eza
