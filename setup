@@ -248,7 +248,7 @@ clone_zsh_plugins() {
   if folder_exists "$HOME/.oh-my-zsh/custom/plugins/you-should-use"; then
     fmt_success "You Should Use already installed"
   else
-    git clone https://github.com/MichaelAquilina/zsh-you-should-use.git $ZSH_CUSTOM/plugins/you-should-use
+    git clone https://github.com/MichaelAquilina/zsh-you-should-use.git ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/you-should-use
   fi
 }
 
@@ -464,6 +464,25 @@ install_neovim() {
   fi
 }
 
+install_fzf() {
+  if command_exists fzf; then
+    fmt_success "Fzf already installed"
+    return
+  fi
+  fmt_info "
+  ******************
+  * Installing Fzf *
+  ******************
+  "
+  brew install fzf
+  if [ $? -eq 0 ]; then
+    fmt_success "Fzf installed successfully"
+  else
+    fmt_error "Failed to install Fzf"
+    exit 1
+  fi
+}
+
 install_zsh_plugins_and_packages() {
   fmt_info "
   ***************************
@@ -482,6 +501,7 @@ install_zsh_plugins_and_packages() {
   install_tmux
   clone_tmux_plugin_manager
   install_neovim
+  install_fzf
 
   fmt_success "ZSH plugins installed successfully"
 }
