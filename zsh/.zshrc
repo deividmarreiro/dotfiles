@@ -41,7 +41,8 @@ export FZF_DEFAULT_OPTS=" \
 --color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8"
 
 
-export PATH="/home/deividmarreiro/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+
 
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
