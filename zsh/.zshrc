@@ -1,52 +1,51 @@
+# ===================================================================
+# .zshrc - Managed by GNU Stow
+# ===================================================================
 
-# If you come from bash you might have to change your $PATH.
-export PATH=$HOME/bin:/usr/local/bin:$PATH
+# 1. History Configuration
+HISTSIZE=5000
+SAVEHIST=5000
+HISTFILE=~/.zsh_history
+setopt histignorealldups sharehistory
 
-# Path to your oh-my-zsh installation.
+# 2. Keybindings
+bindkey -e
+
+# 3. Load Oh My Zsh (Core functions and framework)
 export ZSH="$HOME/.oh-my-zsh"
-
-ZSH_THEME=""
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
-export FZF_BASE="/home/linuxbrew/.linuxbrew/opt/fzf"
-plugins=(git fzf zsh-autosuggestions zsh-syntax-highlighting you-should-use poetry)
-
+ZSH_THEME="" # Left blank because we are using Starship
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-completions)
 source $ZSH/oh-my-zsh.sh
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# 4. Advanced Completion System (Customized from old config)
+# Note: Oh My Zsh already runs compinit, so we just add the styling
+zstyle ':completion:*' auto-description 'specify: %d'
+zstyle ':completion:*' completer _expand _complete _correct _approximate
+zstyle ':completion:*' format 'Completing %d'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' menu select=2
+eval "$(dircolors -b)"
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' list-colors ''
+zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
+zstyle ':completion:*' menu select=long
+zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+zstyle ':completion:*' use-compctl false
+zstyle ':completion:*' verbose true
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
-# Changing ls to eza
-alias ls='eza --icons --color=always --group-directories-first'
-alias ll='eza -alF --icons --color=always --group-directories-first'
-alias la='eza -a --icons --color=always --group-directories-first'
-alias l='eza -F --icons --color=always --group-directories-first'
-alias l.='eza -a | egrep "^\."'
-alias vim='nvim'
-alias n='nvim'
-alias lzd='lazydocker'
-alias lg='lazygit'
-alias c="code"
-
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+# 5. Tool Manager & Prompt
+eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
 
-export FZF_DEFAULT_OPTS=" \
---color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
---color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
---color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8"
+# 6. Environment Variables (API Keys for CLI AI Agents)
+export ANTHROPIC_API_KEY="your-anthropic-key-here"
+export GEMINI_API_KEY="your-gemini-key-here"
 
-
-export PATH="/home/deividmarreiro/.local/bin:$PATH"
-
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# 7. Custom Aliases
+alias c="cursor ."
+alias ll="eza -lh --icons"
+alias lg="lazygit"
+alias ld="lazydocker"
