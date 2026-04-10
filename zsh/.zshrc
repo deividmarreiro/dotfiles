@@ -40,11 +40,7 @@ zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
 
-# 6. Environment Variables (API Keys for CLI AI Agents)
-export ANTHROPIC_API_KEY="your-anthropic-key-here"
-export GEMINI_API_KEY="your-gemini-key-here"
-
-# 7. Custom Aliases
+# 6. Custom Aliases
 alias c="cursor ."
 alias ll="eza -lh --icons"
 alias lg="lazygit"
