@@ -37,6 +37,7 @@ zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
 zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 # 5. Tool Manager & Prompt
+export PATH="$HOME/.local/bin:$PATH"
 eval "$(mise activate zsh)"
 eval "$(starship init zsh)"
 

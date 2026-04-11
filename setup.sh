@@ -117,7 +117,7 @@ setup_dotfiles_and_shell() {
   fi
 
   # Stow the dotfiles (assuming the script is run from the dotfiles directory)
-  stow -t $HOME */
+  stow -t "$HOME" zsh starship
   fmt_success "Dotfiles linked."
 
   # Change default shell
